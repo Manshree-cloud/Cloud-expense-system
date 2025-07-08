@@ -1,1 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for AWS Expense Reimbursement System
+
+Resources:
+
+  ExpenseReceiptBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "expense-receipts-${AWS::AccountId}"
+  
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: LambdaExecutionRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "lambda.amazonaws.com"
+            Action: "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+  SubmitExpenseFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: SubmitExpenseFunction
+      Handler: index.lambda_handler
+      Runtime: python3.10
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+              return {
+                  'statusCode': 200,
+                  'body': 'Expense submitted successfully!'
+              }
+      Timeout: 5
 
