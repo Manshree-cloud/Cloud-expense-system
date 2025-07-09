@@ -38,11 +38,7 @@ Resources:
                   'body': 'Expense submitted successfully!'
               }
       Timeout: 5
-
-
-
-
-        ApproveExpenseFunction
+        ApproveExpenseFunction:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: ApproveExpenseFunction
