@@ -22,8 +22,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
-
-   SubmitExpenseFunction:
+SubmitExpenseFunction:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: SubmitExpenseFunction
@@ -38,8 +37,7 @@ Resources:
                   'body': 'Expense submitted successfully!'
               }
       Timeout: 5
-
-  ApproveExpenseFunction:
+ApproveExpenseFunction:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: ApproveExpenseFunction
