@@ -6,13 +6,12 @@ Design and deploy a secure, scalable, and cloud-native **Expense Reimbursement S
 ## Technologies Used  
 - AWS Lambda  
 - Amazon API Gateway  
-- Amazon RDS / DynamoDB  
+- Amazon RDS / DynamoDB
 - Amazon Cognito  
 - AWS IAM  
 - AWS CloudFormation  
 - Amazon CloudWatch  
 - Amazon S3  
-- Amazon SNS
 
 ## Features  
 - Secure multi-role login (Employee, Manager, Finance)  
@@ -32,9 +31,13 @@ This is a serverless expense reimbursement application demonstrating key AWS clo
 
 ## Project Structure
 
-- `/infra` - Contains the CloudFormation YAML template that deploys the necessary AWS resources.
-- `/lambda` - Contains Lambda function code for submitting and approving expenses (Python).
+**/infra**  
+  Contains the CloudFormation template (`cloudformation.yaml`) to deploy all AWS resources including S3 buckets, IAM roles, Cognito User Pool, and Lambda functions.
 
+- **/lambda**  
+  Contains Lambda function source code written in Python:  
+  - `submit-expense.py` — Handles expense submission logic  
+  - `approve-expense.py` — Manages expense approval workflow
 ## Deployment Instructions
 
 1. Deploy the CloudFormation stack from `/infra/cloudformation.yaml` to create AWS resources.
