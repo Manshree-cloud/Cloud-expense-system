@@ -72,8 +72,8 @@ Resources:
                   })
               }
       Timeout: 5
-
-        UserPool:
+      
+      UserPool:
     Type: AWS::Cognito::UserPool
     Properties:
       UserPoolName: ExpenseSystemUserPool
