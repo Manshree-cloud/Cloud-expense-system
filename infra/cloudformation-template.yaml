@@ -42,7 +42,7 @@ Resources:
 
 
 
-        ApproveExpenseFunction:
+        ApproveExpenseFunction
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: ApproveExpenseFunction
