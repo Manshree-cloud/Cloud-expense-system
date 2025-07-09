@@ -53,7 +53,7 @@ Resources:
           def lambda_handler(event, context):
               body = json.loads(event.get('body', '{}'))
               expense_id = body.get('expense_id')
-              approved = body.get('approved')  # True or False
+              approved = body.get('approved')
               manager_id = body.get('manager_id')
 
               if not expense_id or approved is None:
@@ -116,3 +116,80 @@ Resources:
     Properties:
       GroupName: Finance
       UserPoolId: !Ref UserPool
+
+  ExpenseApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: ExpenseReimbursementAPI
+
+  ApiAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      Name: ExpenseAPIAuthorizer
+      RestApiId: !Ref ExpenseApi
+      Type: COGNITO_USER_POOLS
+      IdentitySource: method.request.header.Authorization
+      ProviderARNs:
+        - !GetAtt UserPool.Arn
+
+  SubmitResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt ExpenseApi.RootResourceId
+      PathPart: submit
+      RestApiId: !Ref ExpenseApi
+
+  SubmitMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ExpenseApi
+      ResourceId: !Ref SubmitResource
+      HttpMethod: POST
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref ApiAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - arn:aws:apigateway:${Region}:lambda:path/2015-03-31/functions/${FuncArn}/invocations
+          - Region: !Ref AWS::Region
+            FuncArn: !GetAtt SubmitExpenseFunction.Arn
+
+  ApproveResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt ExpenseApi.RootResourceId
+      PathPart: approve
+      RestApiId: !Ref ExpenseApi
+
+  ApproveMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ExpenseApi
+      ResourceId: !Ref ApproveResource
+      HttpMethod: POST
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref ApiAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - arn:aws:apigateway:${Region}:lambda:path/2015-03-31/functions/${FuncArn}/invocations
+          - Region: !Ref AWS::Region
+            FuncArn: !GetAtt ApproveExpenseFunction.Arn
+
+  PermissionForSubmitFunction:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SubmitExpenseFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ExpenseApi}/*/POST/submit
+
+  PermissionForApproveFunction:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ApproveExpenseFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ExpenseApi}/*/POST/approve
