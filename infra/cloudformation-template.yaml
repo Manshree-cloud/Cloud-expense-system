@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: CloudFormation template for AWS Expense Reimbursement System
+Description: AWS Expense Reimbursement System with Cognito, Lambda, and API Gateway
 
 Resources:
 
@@ -49,21 +49,14 @@ Resources:
       Code:
         ZipFile: |
           import json
-
           def lambda_handler(event, context):
               body = json.loads(event.get('body', '{}'))
               expense_id = body.get('expense_id')
               approved = body.get('approved')
               manager_id = body.get('manager_id')
-
               if not expense_id or approved is None:
-                  return {
-                      'statusCode': 400,
-                      'body': json.dumps({'message': 'Invalid input'})
-                  }
-
+                  return {'statusCode': 400, 'body': json.dumps({'message': 'Invalid input'})}
               status = 'approved' if approved else 'rejected'
-
               return {
                   'statusCode': 200,
                   'body': json.dumps({
@@ -122,22 +115,22 @@ Resources:
     Properties:
       Name: ExpenseReimbursementAPI
 
-  ApiAuthorizer:
+  ApiGatewayAuthorizer:
     Type: AWS::ApiGateway::Authorizer
     Properties:
-      Name: ExpenseAPIAuthorizer
+      Name: CognitoAuthorizer
       RestApiId: !Ref ExpenseApi
-      Type: COGNITO_USER_POOLS
       IdentitySource: method.request.header.Authorization
+      Type: COGNITO_USER_POOLS
       ProviderARNs:
         - !GetAtt UserPool.Arn
 
   SubmitResource:
     Type: AWS::ApiGateway::Resource
     Properties:
+      RestApiId: !Ref ExpenseApi
       ParentId: !GetAtt ExpenseApi.RootResourceId
       PathPart: submit
-      RestApiId: !Ref ExpenseApi
 
   SubmitMethod:
     Type: AWS::ApiGateway::Method
@@ -146,50 +139,16 @@ Resources:
       ResourceId: !Ref SubmitResource
       HttpMethod: POST
       AuthorizationType: COGNITO_USER_POOLS
-      AuthorizerId: !Ref ApiAuthorizer
+      AuthorizerId: !Ref ApiGatewayAuthorizer
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
-        Uri: !Sub
-          - arn:aws:apigateway:${Region}:lambda:path/2015-03-31/functions/${FuncArn}/invocations
-          - Region: !Ref AWS::Region
-            FuncArn: !GetAtt SubmitExpenseFunction.Arn
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SubmitExpenseFunction.Arn}/invocations
 
-  ApproveResource:
-    Type: AWS::ApiGateway::Resource
-    Properties:
-      ParentId: !GetAtt ExpenseApi.RootResourceId
-      PathPart: approve
-      RestApiId: !Ref ExpenseApi
-
-  ApproveMethod:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      RestApiId: !Ref ExpenseApi
-      ResourceId: !Ref ApproveResource
-      HttpMethod: POST
-      AuthorizationType: COGNITO_USER_POOLS
-      AuthorizerId: !Ref ApiAuthorizer
-      Integration:
-        Type: AWS_PROXY
-        IntegrationHttpMethod: POST
-        Uri: !Sub
-          - arn:aws:apigateway:${Region}:lambda:path/2015-03-31/functions/${FuncArn}/invocations
-          - Region: !Ref AWS::Region
-            FuncArn: !GetAtt ApproveExpenseFunction.Arn
-
-  PermissionForSubmitFunction:
+  SubmitExpensePermission:
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !Ref SubmitExpenseFunction
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ExpenseApi}/*/POST/submit
-
-  PermissionForApproveFunction:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref ApproveExpenseFunction
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ExpenseApi}/*/POST/approve
